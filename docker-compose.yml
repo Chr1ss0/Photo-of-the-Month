@@ -1,0 +1,41 @@
+# Start:   cp .env.docker.example .env   (Werte anpassen)
+#          docker compose up -d --build
+services:
+  app:
+    build: .
+    image: photo-of-the-month:latest
+    restart: unless-stopped
+    environment:
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Berlin}
+      ALLOWED_ORIGINS: https://${DOMAIN:?DOMAIN in .env setzen}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-25}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    volumes:
+      - potm-data:/data
+    # kein öffentlicher Port – erreichbar nur über Caddy
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  potm-data:
+  caddy-data:
+  caddy-config:

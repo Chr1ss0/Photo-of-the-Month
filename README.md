@@ -37,7 +37,16 @@ Danach <http://localhost:5173> öffnen. Der Admin wird beim ersten Start aus `AD
 angelegt (alternativ interaktiv: `npm run create-admin --prefix backend`).
 Demo-Benutzer: `mara`, `jonas`, `lea`, `tim` – Passwort `demo-passwort-123`.
 
-### Produktion
+### Produktion mit Docker (empfohlen)
+
+```bash
+cp .env.docker.example .env      # DOMAIN, ADMIN_USERNAME, ADMIN_PASSWORD setzen
+docker compose up -d --build     # App + Caddy mit automatischem HTTPS
+```
+
+Details zu Updates, Backups und Fehlersuche: [DEPLOY.md](DEPLOY.md).
+
+### Produktion ohne Docker
 
 ```bash
 npm run build

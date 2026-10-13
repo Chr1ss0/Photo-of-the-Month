@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+backend/data
+**/.env
+**/.env.*
+.git
+.github
+**/*.log
+**/coverage
+**/.DS_Store
