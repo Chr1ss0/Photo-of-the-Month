@@ -41,10 +41,12 @@ Demo-Benutzer: `mara`, `jonas`, `lea`, `tim` – Passwort `demo-passwort-123`.
 
 ```bash
 cp .env.docker.example .env      # DOMAIN, ADMIN_USERNAME, ADMIN_PASSWORD setzen
-docker compose up -d --build     # App + Caddy mit automatischem HTTPS
+./deploy/update.sh               # Image bauen und Container starten (127.0.0.1:3000)
 ```
 
-Details zu Updates, Backups und Fehlersuche: [DEPLOY.md](DEPLOY.md).
+Ein vorhandener Reverse-Proxy (z. B. Caddy, Vorlage `deploy/Caddyfile.example`) leitet die Domain auf den Container.
+Nach Code-Änderungen aktualisiert `./deploy/update.sh` das Image (inkl. Backup und `--rollback`).
+Details: [DEPLOY.md](DEPLOY.md).
 
 ### Produktion ohne Docker
 
