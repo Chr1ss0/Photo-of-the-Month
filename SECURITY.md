@@ -69,6 +69,12 @@ Strikte CSP (`default-src 'self'`, kein Inline-Script, `frame-ancestors 'none'`,
 | `scripts/security-probe.sh` gegen Produktions-Build (24 Black-Box-Checks: Auth-Pflicht, CSRF, Path-Traversal, Header, Brute-Force) | ✅ alle bestanden |
 | Browser-Durchlauf (Playwright) im Produktionsmodus mit aktiver CSP: Login, Upload, Galerie, Kommentar mit `<script>`-Payload, Admin-Seiten | ✅ keine CSP-Verletzungen, Payload als Text dargestellt |
 
+### Betrieb im Container
+- Image läuft als unprivilegierter Benutzer `node`, nur Produktionsabhängigkeiten, Port nur auf `127.0.0.1` veröffentlicht.
+- Variante rootless Podman (`deploy/podman/`): Systembenutzer ohne Login-Shell, kein root-Daemon, schreibgeschütztes
+  Root-Dateisystem, alle Capabilities entfernt, `no-new-privileges`; Konfiguration und Unit-Datei gehören root.
+- Sauberes Herunterfahren bei SIGTERM (laufende Anfragen werden abgeschlossen, Datenbank geschlossen).
+
 ## Empfehlungen für den Betrieb
 - Nur hinter HTTPS betreiben, `COOKIE_SECURE=true`, `TRUST_PROXY` korrekt setzen.
 - `ADMIN_PASSWORD` nach dem ersten Start aus der Umgebung entfernen bzw. ändern.

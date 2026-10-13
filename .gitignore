@@ -5,7 +5,9 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.docker.example
 backend/data/
+backups/
 .DS_Store
 .vscode/*
 !.vscode/extensions.json

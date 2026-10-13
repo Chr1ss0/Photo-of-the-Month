@@ -1,0 +1,38 @@
+# Quadlet-Unit für rootless Podman.
+# deploy/podman/setup.sh installiert sie nach /etc/containers/systemd/users/<uid von potm>/
+# (gehört root, der Dienstbenutzer kann sie nicht ändern) und ersetzt dabei die Platzhalter
+# für Port und Konfigurationsdatei. Die systemd-Benutzerinstanz von potm erzeugt daraus
+# photo-of-the-month.service.
+
+[Unit]
+Description=Photo of the Month (Frontend + API)
+
+[Container]
+ContainerName=photo-of-the-month
+Image=localhost/photo-of-the-month:latest
+Pull=never
+
+# nur lokal erreichbar – Caddy auf dem Host leitet weiter
+PublishPort=127.0.0.1:@APP_PORT@:3000
+EnvironmentFile=@ENV_FILE@
+Volume=potm-data:/data
+
+# Härtung: Root-Dateisystem schreibgeschützt (/tmp als tmpfs), keine Capabilities
+ReadOnly=true
+DropCapability=ALL
+NoNewPrivileges=true
+
+# Healthcheck explizit (OCI-Images übernehmen HEALTHCHECK aus dem Dockerfile nicht)
+HealthCmd=node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=15s
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

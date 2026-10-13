@@ -37,7 +37,19 @@ Danach <http://localhost:5173> öffnen. Der Admin wird beim ersten Start aus `AD
 angelegt (alternativ interaktiv: `npm run create-admin --prefix backend`).
 Demo-Benutzer: `mara`, `jonas`, `lea`, `tim` – Passwort `demo-passwort-123`.
 
-### Produktion
+### Produktion mit Docker (empfohlen)
+
+```bash
+cp .env.docker.example .env      # DOMAIN, ADMIN_USERNAME, ADMIN_PASSWORD setzen
+./deploy/update.sh               # Image bauen und Container starten (127.0.0.1:3000)
+```
+
+Ein vorhandener Reverse-Proxy (z. B. Caddy, Vorlage `deploy/Caddyfile.example`) leitet die Domain auf den Container.
+Nach Code-Änderungen aktualisiert `./deploy/update.sh` das Image (inkl. Backup und `--rollback`).
+Alternativ als **rootless Podman** mit eigenem Systembenutzer ohne Shell: `sudo ./deploy/podman/setup.sh`.
+Details zu beiden Varianten: [DEPLOY.md](DEPLOY.md).
+
+### Produktion ohne Docker
 
 ```bash
 npm run build

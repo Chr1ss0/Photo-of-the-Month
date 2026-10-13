@@ -1,0 +1,13 @@
+# Ausschnitt für den vorhandenen Caddy auf dem VPS (z. B. /etc/caddy/Caddyfile).
+# Danach: sudo systemctl reload caddy
+foto.example.de {
+	encode zstd gzip
+
+	# etwas über MAX_UPLOAD_MB der App
+	request_body {
+		max_size 30MB
+	}
+
+	# Port = APP_PORT aus der .env (Standard 3000)
+	reverse_proxy 127.0.0.1:3000
+}
