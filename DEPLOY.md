@@ -1,4 +1,11 @@
-# Deployment mit Docker (hinter vorhandenem Caddy)
+# Deployment (hinter vorhandenem Caddy)
+
+Zwei Varianten – beide nutzen dasselbe `Dockerfile`:
+
+- **A – Docker** mit `docker compose` (unten)
+- **B – Rootless Podman** als Systembenutzer ohne Shell, gestartet über systemd ([weiter unten](#variante-b-rootless-podman-systembenutzer-ohne-shell))
+
+# Variante A: Docker
 
 Das Projekt bringt ein `Dockerfile` mit, das Frontend und API in **ein** Image packt. `docker-compose.yml` startet nur
 diesen App-Container; er lauscht ausschließlich auf `127.0.0.1:3000`. Der bereits auf dem VPS laufende Caddy leitet
@@ -116,3 +123,95 @@ docker compose start app
 | Upload großer Dateien bricht ab | `request_body max_size` im Caddyfile erhöhen |
 | Viele „Zu viele Anfragen“ (429) | Weiterer Proxy (z. B. Cloudflare) vor Caddy – dann `TRUST_PROXY=2` in `docker-compose.yml` setzen |
 | Update schlägt beim Healthcheck fehl | `docker compose logs app` prüfen, ggf. `./deploy/update.sh --rollback` |
+
+---
+
+# Variante B: Rootless Podman (Systembenutzer ohne Shell)
+
+Die App läuft als eigener **Systembenutzer `potm` ohne Login-Shell** in rootless Podman. Gestartet und überwacht wird sie
+von systemd über eine [Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)-Unit – auch nach
+einem Reboot, ohne dass sich jemand anmelden muss. Alle Verwaltungsskripte laufen als root und führen Podman als `potm` aus.
+
+```
+Caddy (Host) ──▶ 127.0.0.1:3000 ──▶ rootless Podman (Benutzer potm, nologin)
+                                     └── Container photo-of-the-month (uid node → unprivilegierte subuid)
+                                           ├── Root-Dateisystem schreibgeschützt, keine Capabilities
+                                           └── Volume potm-data → /data
+```
+
+**Sicherheitsgewinn gegenüber Docker:** Es gibt keinen root-Daemon. Selbst ein Ausbruch aus dem Container landet bei einer
+unprivilegierten subuid des Benutzers `potm`, der sich nicht anmelden kann. Zusätzlich setzt die Unit `ReadOnly=true`,
+`DropCapability=ALL` und `NoNewPrivileges=true`.
+
+## Voraussetzungen
+
+**Debian 13 „Trixie“** (Podman 5.x) oder neuer. Debian 12 bringt nur Podman 4.3 ohne Quadlet mit – dort zuerst auf
+Debian 13 aktualisieren (oder Variante A nutzen).
+
+```bash
+sudo apt install podman uidmap passt dbus-user-session git
+```
+
+## Einrichtung (einmalig)
+
+```bash
+sudo git clone https://github.com/Chr1ss0/Photo-of-the-Month.git /opt/potm
+cd /opt/potm
+sudo ./deploy/podman/setup.sh        # 1. Lauf: legt Benutzer und /etc/potm/potm.env an
+sudo nano /etc/potm/potm.env         # ALLOWED_ORIGINS=https://deine-domain, Admin-Zugang, ggf. APP_PORT
+sudo ./deploy/podman/setup.sh        # 2. Lauf: baut das Image und startet die App
+```
+
+`setup.sh` ist mehrfach ausführbar und erledigt:
+
+1. Systembenutzer `potm` mit Home `/var/lib/potm` und Shell `/usr/sbin/nologin`
+2. subuid/subgid-Bereich für `potm` (wird bei Systembenutzern nicht automatisch vergeben)
+3. `loginctl enable-linger potm` – die systemd-Benutzerinstanz läuft ohne Login und startet die App beim Booten
+4. Konfiguration `/etc/potm/potm.env` (Besitzer `root:potm`, Rechte `0640`)
+5. Quadlet-Unit nach `/etc/containers/systemd/users/<uid>/photo-of-the-month.container` (gehört root – `potm` kann sie
+   nicht verändern)
+6. Image bauen, Dienst starten, Healthcheck abwarten
+
+Danach im Caddyfile `reverse_proxy 127.0.0.1:3000` eintragen (Vorlage `deploy/Caddyfile.example`) und
+`sudo systemctl reload caddy`. `ADMIN_PASSWORD` nach dem ersten Login aus `/etc/potm/potm.env` entfernen.
+
+## Code geändert? Aktualisieren
+
+```bash
+cd /opt/potm
+sudo ./deploy/podman/update.sh              # git pull, Backup, Image neu bauen, Neustart, Healthcheck
+sudo ./deploy/podman/update.sh --no-pull    # lokalen Stand bauen (auch nach Änderungen an potm.env)
+sudo ./deploy/podman/update.sh --rollback   # zurück zum vorherigen Image
+```
+
+Vor jedem Update wird ein Backup erstellt und das laufende Image als `localhost/photo-of-the-month:previous` aufgehoben.
+Hinter einem Proxy oder für Spezialfälle lassen sich Optionen an `podman build` durchreichen:
+`sudo POTM_BUILD_OPTS="--network=host" ./deploy/podman/update.sh`.
+
+## Betrieb
+
+```bash
+sudo ./deploy/podman/status.sh            # Dienst, Container, laufender Commit
+sudo ./deploy/podman/status.sh --logs     # Logs live (journald)
+sudo ./deploy/podman/status.sh --admin    # Admin anlegen / Passwort zurücksetzen
+sudo ./deploy/podman/backup.sh            # Backup nach /var/backups/potm (nur root lesbar)
+sudo ./deploy/podman/restore.sh /var/backups/potm/potm-<datum>.tar.gz
+```
+
+**Tägliches Backup** (root-Crontab, `sudo crontab -e`):
+`30 3 * * * /opt/potm/deploy/podman/backup.sh >/dev/null` – Backups älter als 14 Tage werden gelöscht.
+
+Direkt mit Podman/systemd arbeiten (als root):
+`sudo runuser -u potm -- env XDG_RUNTIME_DIR=/run/user/$(id -u potm) podman ps` bzw.
+`... systemctl --user status photo-of-the-month`.
+
+## Fehlersuche
+
+| Symptom | Ursache / Lösung |
+| --- | --- |
+| `setup.sh`: „Benutzer-systemd läuft nicht“ | `dbus-user-session` installieren, dann erneut ausführen |
+| `newuidmap … operation not permitted` | Paket `uidmap` fehlt oder kein subuid-Eintrag: `grep potm /etc/subuid` |
+| Container startet nach Reboot nicht | Linger aktiv? `loginctl show-user potm -p Linger` |
+| Unit wird nicht gefunden | Podman < 4.4 (Debian 12) – Quadlet nicht verfügbar |
+| „Ungültige Herkunft“ / „CSRF“ | `ALLOWED_ORIGINS` in `/etc/potm/potm.env` passt nicht zur Domain |
+| Port geändert | `APP_PORT` in `potm.env` ändern, `setup.sh` erneut ausführen, Caddyfile anpassen |

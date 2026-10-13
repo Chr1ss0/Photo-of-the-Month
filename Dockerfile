@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---------------------------------------------------------------- Build
-FROM node:22-bookworm-slim AS build
+FROM docker.io/library/node:22-bookworm-slim AS build
 # Fallback-Toolchain, falls für sharp/better-sqlite3 kein vorkompiliertes Paket existiert
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
@@ -20,7 +20,7 @@ RUN npm run build --prefix frontend \
  && npm prune --omit=dev --prefix backend
 
 # ---------------------------------------------------------------- Runtime
-FROM node:22-bookworm-slim AS runtime
+FROM docker.io/library/node:22-bookworm-slim AS runtime
 # Git-Commit des Builds (von deploy/update.sh gesetzt) – sichtbar per `docker inspect`
 ARG GIT_COMMIT=unknown
 LABEL org.opencontainers.image.title="Photo of the Month" \

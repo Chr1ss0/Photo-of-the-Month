@@ -46,7 +46,8 @@ cp .env.docker.example .env      # DOMAIN, ADMIN_USERNAME, ADMIN_PASSWORD setzen
 
 Ein vorhandener Reverse-Proxy (z. B. Caddy, Vorlage `deploy/Caddyfile.example`) leitet die Domain auf den Container.
 Nach Code-Änderungen aktualisiert `./deploy/update.sh` das Image (inkl. Backup und `--rollback`).
-Details: [DEPLOY.md](DEPLOY.md).
+Alternativ als **rootless Podman** mit eigenem Systembenutzer ohne Shell: `sudo ./deploy/podman/setup.sh`.
+Details zu beiden Varianten: [DEPLOY.md](DEPLOY.md).
 
 ### Produktion ohne Docker
 

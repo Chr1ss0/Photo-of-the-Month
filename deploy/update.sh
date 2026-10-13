@@ -30,7 +30,8 @@ if [[ $PULL -eq 1 ]]; then
   echo "⬇  Hole aktuellen Code …"
   git pull --ff-only
 fi
-export GIT_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+GIT_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+export GIT_COMMIT
 
 # Backup + bisheriges Image sichern (falls der Container schon läuft)
 if docker compose ps --status running --quiet app 2>/dev/null | grep -q .; then
