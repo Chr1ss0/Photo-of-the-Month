@@ -21,6 +21,10 @@ RUN npm run build --prefix frontend \
 
 # ---------------------------------------------------------------- Runtime
 FROM node:22-bookworm-slim AS runtime
+# Git-Commit des Builds (von deploy/update.sh gesetzt) – sichtbar per `docker inspect`
+ARG GIT_COMMIT=unknown
+LABEL org.opencontainers.image.title="Photo of the Month" \
+      org.opencontainers.image.revision=$GIT_COMMIT
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000 \

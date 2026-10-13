@@ -1,9 +1,16 @@
-# Start:   cp .env.docker.example .env   (Werte anpassen)
-#          docker compose up -d --build
+# Photo of the Month – App-Container (Frontend + API).
+# Ein vorhandener Reverse-Proxy (z. B. Caddy auf dem Host) leitet auf 127.0.0.1:${APP_PORT} weiter.
+#
+#   cp .env.docker.example .env   (Werte anpassen)
+#   ./deploy/update.sh            (bauen/aktualisieren und starten)
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
     image: photo-of-the-month:latest
+    container_name: photo-of-the-month
     restart: unless-stopped
     environment:
       APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Berlin}
@@ -15,27 +22,9 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     volumes:
       - potm-data:/data
-    # kein öffentlicher Port – erreichbar nur über Caddy
-    expose:
-      - "3000"
-
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    depends_on:
-      - app
+    # nur lokal erreichbar – von außen ausschließlich über den Reverse-Proxy
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    environment:
-      DOMAIN: ${DOMAIN}
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
 
 volumes:
   potm-data:
-  caddy-data:
-  caddy-config:
