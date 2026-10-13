@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Express } from 'express';
 import { config } from '../src/config/env.js';
 import { getDb } from '../src/db/index.js';
-import { client, freshApp, loggedIn, ORIGIN, PASSWORD } from './helpers/app.js';
+import { client, freshApp, loggedIn, ORIGIN, PASSWORD, travelTo } from './helpers/app.js';
 
 let app: Express;
 beforeEach(() => {
@@ -109,6 +109,15 @@ describe('Registrierung & Login', () => {
   it('lehnt manipulierte oder abgelaufene Session-Cookies ab', async () => {
     const res = await request(app).get('/api/challenges/current').set('Cookie', 'potm_sid=gefaelscht').expect(401);
     expect(res.body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('lässt Sessions nach Ablauf der Gültigkeit verfallen', async () => {
+    travelTo('2026-10-01T10:00:00Z');
+    const a = await loggedIn(app, 'lisa');
+    await a.get('/api/challenges/current').expect(200);
+    travelTo(new Date(Date.parse('2026-10-01T10:00:00Z') + config.sessionTtlHours * 3600_000 + 1000).toISOString());
+    await a.get('/api/challenges/current').expect(401);
+    expect(getDb().prepare('SELECT COUNT(*) AS n FROM sessions').get()).toEqual({ n: 0 });
   });
 
   it('respektiert ALLOW_REGISTRATION=false', async () => {

@@ -30,7 +30,7 @@ export const EMPTY_EXIF: ExifData = {
   takenAt: null,
 };
 
-const WHITE_BALANCE: Record<string, string> = { Auto: 'Automatisch', Manual: 'Manuell' };
+const WHITE_BALANCE: Record<string, string> = { Auto: 'Auto', Manual: 'Manuell' };
 
 const LIGHT_SOURCE: Record<string, string> = {
   Daylight: 'Tageslicht',

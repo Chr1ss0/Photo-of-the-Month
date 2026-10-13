@@ -13,6 +13,9 @@ export default defineConfig({
       DB_FILE: ':memory:',
       APP_TIMEZONE: 'Europe/Berlin',
       RATE_LIMIT: 'false',
+      // Lange Session-Dauer, damit Cookie-Ablaufdaten (echte Uhr im Cookie-Jar) Tests mit
+      // simulierter Zeit nicht beeinflussen
+      SESSION_TTL_HOURS: String(24 * 365 * 20),
       STATIC_DIR: 'does-not-exist',
     },
   },

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { currentUser, requireAdmin } from '../../middleware/auth.js';
-import { isValidPeriod } from '../../utils/time.js';
+import { currentPeriod, isValidPeriod } from '../../utils/time.js';
 import { cleanText, idParam, parse } from '../../utils/validation.js';
 import { passwordSchema } from '../auth/auth.schemas.js';
 import {
@@ -97,6 +97,7 @@ adminRouter.delete('/themes/:id', (req, res) => {
 // --- Challenges
 adminRouter.get('/challenges', (_req, res) => {
   res.json({
+    currentPeriod: currentPeriod(),
     challenges: listChallenges().map((c) => ({ ...toChallengeDto(c), submissionCount: countSubmissions(c.id) })),
   });
 });

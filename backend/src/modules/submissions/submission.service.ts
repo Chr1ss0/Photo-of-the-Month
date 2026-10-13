@@ -211,14 +211,19 @@ export async function replacePhoto(id: number, user: SessionUser, file: Buffer):
 
   const exif = await extractExif(file);
   const stored = await storeImage(file);
-  getDb()
-    .prepare(
-      `UPDATE submissions SET image_file = ?, thumb_file = ?, width = ?, height = ?,
-         aperture = ?, exposure_time = ?, iso = ?, white_balance = ?, exposure_bias = ?, gps_lat = ?, gps_lon = ?,
-         focal_length = ?, camera_make = ?, camera_model = ?, lens = ?, taken_at = ?, updated_at = ?
-       WHERE id = ?`,
-    )
-    .run(stored.imageFile, stored.thumbFile, stored.width, stored.height, ...exifColumns(exif), nowIso(), id);
+  try {
+    getDb()
+      .prepare(
+        `UPDATE submissions SET image_file = ?, thumb_file = ?, width = ?, height = ?,
+           aperture = ?, exposure_time = ?, iso = ?, white_balance = ?, exposure_bias = ?, gps_lat = ?, gps_lon = ?,
+           focal_length = ?, camera_make = ?, camera_model = ?, lens = ?, taken_at = ?, updated_at = ?
+         WHERE id = ?`,
+      )
+      .run(stored.imageFile, stored.thumbFile, stored.width, stored.height, ...exifColumns(exif), nowIso(), id);
+  } catch (err) {
+    await removeImages(stored.imageFile, stored.thumbFile);
+    throw err;
+  }
   await removeImages(row.image_file, row.thumb_file);
   return findSubmission(id)!;
 }

@@ -1,0 +1,127 @@
+@import 'tailwindcss';
+
+/* Dark-Mode über Klasse auf <html> (siehe useTheme) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantische Farb-Tokens – wechseln automatisch mit dem Theme */
+:root {
+  --canvas: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f0f0ee;
+  --ink: #18181b;
+  --muted: #6b6b73;
+  --line: #e3e3e0;
+  --accent: #d62d20;
+  --accent-ink: #ffffff;
+  --grain-opacity: 0.035;
+  --film: #18181b;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: #0d0d0f;
+  --surface: #151518;
+  --surface-2: #1d1d21;
+  --ink: #f2f2f0;
+  --muted: #9a9aa3;
+  --line: #2a2a30;
+  --accent: #ef4135;
+  --accent-ink: #ffffff;
+  --grain-opacity: 0.05;
+  --film: #26262c;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+}
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  --tracking-label: 0.18em;
+}
+
+@layer base {
+  html {
+    @apply bg-canvas text-ink antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  body {
+    @apply min-h-dvh;
+  }
+  /* Subtiles Filmkorn über der ganzen Seite */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+  ::selection {
+    @apply bg-accent text-accent-ink;
+  }
+}
+
+@layer components {
+  /* Kleine Versal-Beschriftung wie auf Kamerarädern */
+  .label-caps {
+    @apply font-mono text-[0.68rem] uppercase tracking-(--tracking-label) text-muted;
+  }
+
+  /* Sucher-Ecken um Bilder */
+  .viewfinder {
+    position: relative;
+  }
+  .viewfinder::before,
+  .viewfinder::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-color: currentColor;
+    opacity: 0.55;
+    pointer-events: none;
+    transition: all 0.25s ease;
+  }
+  .viewfinder::before {
+    top: -8px;
+    left: -8px;
+    border-top-width: 1.5px;
+    border-left-width: 1.5px;
+  }
+  .viewfinder::after {
+    bottom: -8px;
+    right: -8px;
+    border-bottom-width: 1.5px;
+    border-right-width: 1.5px;
+  }
+
+  /* Filmstreifen-Perforation als Trenner */
+  .film-strip {
+    height: 14px;
+    background-color: var(--film);
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0 6px,
+      var(--canvas) 6px 14px,
+      transparent 14px 22px
+    );
+    background-size: 22px 6px;
+    background-repeat: repeat-x;
+    background-position: 0 center;
+    opacity: 0.9;
+  }
+}

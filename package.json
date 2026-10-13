@@ -1,0 +1,18 @@
+{
+  "name": "photo-of-the-month",
+  "private": true,
+  "description": "Monatliche Foto-Challenge – Vue 3 + TypeScript Frontend, Node.js/Express REST-API",
+  "scripts": {
+    "install:all": "npm ci --prefix backend && npm ci --prefix frontend",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "start": "npm start --prefix backend",
+    "test": "npm test --prefix backend && npm test --prefix frontend",
+    "lint": "npm run typecheck --prefix backend && npm run type-check --prefix frontend && npm run lint --prefix frontend",
+    "audit": "npm audit --prefix backend && npm audit --prefix frontend",
+    "seed:demo": "npm run seed:demo --prefix backend"
+  },
+  "engines": {
+    "node": ">=20.12"
+  }
+}

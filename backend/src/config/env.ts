@@ -1,7 +1,12 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+// Lokale .env-Datei laden (bereits gesetzte Umgebungsvariablen haben Vorrang)
+const envFile = path.join(rootDir, '.env');
+if (process.env.NODE_ENV !== 'test' && fs.existsSync(envFile)) process.loadEnvFile(envFile);
 
 function str(name: string, fallback: string): string {
   const v = process.env[name];
